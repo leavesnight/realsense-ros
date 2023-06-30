@@ -1645,6 +1645,26 @@ void BaseRealSenseNode::frame_callback(rs2::frame frame)
         }
 
         ros::Time t(frameSystemTimeSec(frame));
+        if (!frame.supports_frame_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP)) {
+          double t_try_sensor_tm = t.toSec();
+          if (frame.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)) {
+            t_try_sensor_tm +=
+                frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE) *
+                0.5e-6;
+            std::cout<<"expdt="<<frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)<<std::endl;
+          }
+          t = ros::Time(t_try_sensor_tm);
+        }
+        /*std::cout<<(int)frame.supports_frame_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP)
+                  <<(int)frame.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)
+                  <<(int)frame.supports_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP)
+                  <<std::endl;*/
+        /*std::cout<<(int)frame.get_frame_timestamp_domain()<<":"
+                  <<std::fixed<<std::setprecision(10)<<"check now t="
+                  <<(frame.get_timestamp() / 1000.0)<<",exp dt="
+                  <<frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)
+                  <<",sof="<<frame.get_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP)
+                  <<std::endl;*/
         if (frame.is<rs2::frameset>())
         {
             ROS_DEBUG("Frameset arrived.");
@@ -1751,6 +1771,8 @@ void BaseRealSenseNode::frame_callback(rs2::frame frame)
         {
             auto stream_type = frame.get_profile().stream_type();
             auto stream_index = frame.get_profile().stream_index();
+            ROS_INFO("Single video frame arrived (%s, %d). frame_number: %llu ; frame_TS: %f ; ros_TS(NSec): %lu",
+                        rs2_stream_to_string(stream_type), stream_index, frame.get_frame_number(), frame_time, t.toNSec());
             ROS_DEBUG("Single video frame arrived (%s, %d). frame_number: %llu ; frame_TS: %f ; ros_TS(NSec): %lu",
                         rs2_stream_to_string(stream_type), stream_index, frame.get_frame_number(), frame_time, t.toNSec());
             runFirstFrameInitialization(stream_type);
