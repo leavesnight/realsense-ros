@@ -1872,6 +1872,7 @@ void BaseRealSenseNode::pose_callback(rs2::frame frame)
     publishMetadata(frame, _frame_id[POSE]);
 }
 
+rclcpp::Time S2ROSTime(double t) { return rclcpp::Time((int64_t)(t * 1.e9)); }
 void BaseRealSenseNode::frame_callback(rs2::frame frame)
 {
     _synced_imu_publisher->Pause();
@@ -1889,6 +1890,17 @@ void BaseRealSenseNode::frame_callback(rs2::frame frame)
         }
 
         rclcpp::Time t(frameSystemTimeSec(frame));
+        if (!frame.supports_frame_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP)) {
+            double t_try_sensor_tm = t.seconds();
+            if (frame.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE))
+            t_try_sensor_tm +=
+                  frame.get_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE) * 0.5e-6;
+            t = S2ROSTime(t_try_sensor_tm);
+        }
+        /*std::cout<<(int)frame.supports_frame_metadata(RS2_FRAME_METADATA_SENSOR_TIMESTAMP)
+                  <<(int)frame.supports_frame_metadata(RS2_FRAME_METADATA_ACTUAL_EXPOSURE)
+                  <<(int)frame.supports_frame_metadata(RS2_FRAME_METADATA_FRAME_TIMESTAMP)
+                  <<std::endl;*/
         if (frame.is<rs2::frameset>())
         {
             ROS_DEBUG("Frameset arrived.");
@@ -1902,9 +1914,11 @@ void BaseRealSenseNode::frame_callback(rs2::frame frame)
                 auto stream_format = f.get_profile().format();
                 auto stream_unique_id = f.get_profile().unique_id();
 
-                ROS_DEBUG("Frameset contain (%s, %d, %s %d) frame. frame_number: %llu ; frame_TS: %f ; ros_TS(NSec): %lu",
+              /*ROS_INFO("Frameset contain (%s, %d, %s %d) frame. frame_number: %llu ; frame_TS: %f ; ros_TS(NSec): %lu",
+                        rs2_stream_to_string(stream_type), stream_index, rs2_format_to_string(stream_format), stream_unique_id, frame.get_frame_number(), frame_time, t.nanoseconds());*/
+              ROS_DEBUG("Frameset contain (%s, %d, %s %d) frame. frame_number: %llu ; frame_TS: %f ; ros_TS(NSec): %lu",
                             rs2_stream_to_string(stream_type), stream_index, rs2_format_to_string(stream_format), stream_unique_id, frame.get_frame_number(), frame_time, t.nanoseconds());
-                runFirstFrameInitialization(stream_type);
+              runFirstFrameInitialization(stream_type);
             }
             // Clip depth_frame for max range:
             rs2::depth_frame original_depth_frame = frameset.get_depth_frame();
@@ -1992,8 +2006,10 @@ void BaseRealSenseNode::frame_callback(rs2::frame frame)
         {
             auto stream_type = frame.get_profile().stream_type();
             auto stream_index = frame.get_profile().stream_index();
+            /*ROS_INFO("Single video frame arrived (%s, %d). frame_number: %llu ; frame_TS: %f ; ros_TS(NSec): %lu",
+                      rs2_stream_to_string(stream_type), stream_index, frame.get_frame_number(), frame_time, t.nanoseconds());*/
             ROS_DEBUG("Single video frame arrived (%s, %d). frame_number: %llu ; frame_TS: %f ; ros_TS(NSec): %lu",
-                        rs2_stream_to_string(stream_type), stream_index, frame.get_frame_number(), frame_time, t.nanoseconds());
+                      rs2_stream_to_string(stream_type), stream_index, frame.get_frame_number(), frame_time, t.nanoseconds());
             runFirstFrameInitialization(stream_type);
 
             stream_index_pair sip{stream_type,stream_index};
