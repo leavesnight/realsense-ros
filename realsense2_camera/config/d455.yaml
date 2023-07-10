@@ -1,0 +1,34 @@
+camera:
+    camera:
+      ros__parameters:
+        device_type: 'd455'
+        serial_no: ''
+        usb_port_id: ''
+
+        color_fps: 30.0
+        color_height: 480
+        color_width: 848
+        depth_fps: -1.
+        depth_height: -1
+        depth_width: -1
+        infra_fps: 30.0
+        infra_height: 480
+        infra_width: 848
+
+        enable_color: true
+        enable_depth: true
+        align_depth: true
+        enable_infra1: true
+        enable_infra2: true
+
+        gyro_fps: 200.
+        accel_fps: 200.
+        enable_accel: true
+        enable_gyro: true
+        enable_sync: true
+        unite_imu_method: "linear_interpolation"
+
+        enable_pointcloud: false
+
+        stereo_module:
+          emitter_enabled: 0

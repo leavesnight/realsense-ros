@@ -1,0 +1,15 @@
+camera:
+    camera:
+      ros__parameters:
+        device_type: 't265'
+        serial_no: ''
+        usb_port_id: ''
+
+        enable_pose : false
+        enable_fisheye1: true
+        enable_fisheye2: true
+
+        enable_accel: true
+        enable_gyro: true
+        enable_sync: true
+        unite_imu_method: "linear_interpolation"
