@@ -31,4 +31,4 @@ camera:
         enable_pointcloud: false
 
         stereo_module:
-          emitter_enabled: 0
+          emitter_enabled: 1
