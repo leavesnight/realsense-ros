@@ -8,6 +8,7 @@ camera:
         enable_pose : false
         enable_fisheye1: true
         enable_fisheye2: true
+        #fisheye_qos: 'SENSOR_DATA'
 
         enable_accel: true
         enable_gyro: true

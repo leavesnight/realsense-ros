@@ -1,7 +1,7 @@
 camera:
     camera:
       ros__parameters:
-        device_type: 'd435i'
+        device_type: 'd405'
         serial_no: ''
         usb_port_id: ''
 
@@ -24,13 +24,6 @@ camera:
         align_depth: true
         enable_infra1: true
         enable_infra2: true
-
-        gyro_fps: 400.0
-        accel_fps: 200.0
-        enable_accel: true
-        enable_gyro: true
-        enable_sync: true
-        unite_imu_method: "linear_interpolation"
 
         stereo_module:
           emitter_enabled: 1
