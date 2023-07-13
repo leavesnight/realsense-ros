@@ -262,7 +262,7 @@ BaseRealSenseNode::BaseRealSenseNode(rclcpp::Node& node,
         publishTopics();
         _toggle_sensors_srv = _node.create_service<std_srvs::srv::SetBool>(
                 "enable",
-                [&](std_srvs::srv::SetBool::Request::SharedPtr req, 
+                [&](std_srvs::srv::SetBool::Request::SharedPtr req,
                     std_srvs::srv::SetBool::Response::SharedPtr res)
                     {toggle_sensor_callback(req, res);});
 
@@ -632,6 +632,7 @@ void BaseRealSenseNode::set_parameter(rs2::options sensor, rs2_option option, co
         crnt_descriptor.floating_point_range.push_back(range);
         ROS_DEBUG_STREAM("Declare: DOUBLE::" << option_name << " = " << option_value);
     }
+    ROS_INFO_STREAM(option_name << "=" << option_value);
     _parameters->setParam(option_name, rclcpp::ParameterValue(option_value), [option, sensor, option_name](const rclcpp::Parameter& parameter)
                 {
                     param_set_option<T>(sensor, option, option_name, parameter);
@@ -641,13 +642,23 @@ void BaseRealSenseNode::set_parameter(rs2::options sensor, rs2_option option, co
 void BaseRealSenseNode::registerDynamicOption(rs2::options sensor, std::string& module_name)
 {
     rclcpp::Parameter node_param;
+    std::string module_name_check = "stereo_module";
+    module_name_check = "align_to_color";
     for (auto i = 0; i < RS2_OPTION_COUNT; i++)
     {
         rs2_option option = static_cast<rs2_option>(i);
         const std::string option_name(module_name + "." + create_graph_resource_name(rs2_option_to_string(option)));
-        if (!sensor.supports(option) || sensor.is_option_read_only(option))
-        {
-            continue;
+        if (!sensor.supports(option) || sensor.is_option_read_only(option)) {
+          if (module_name == module_name_check) {
+            if (!sensor.supports(option))
+              ROS_INFO_STREAM(option_name << " not support");
+            else
+              ROS_INFO_STREAM(option_name << " read only");
+          }
+          continue;
+        }
+        if (module_name == module_name_check) {
+          ROS_INFO_STREAM("option name=" << option_name);
         }
         if (is_checkbox(sensor, option))
         {
@@ -666,6 +677,11 @@ void BaseRealSenseNode::registerDynamicOption(rs2::options sensor, std::string& 
                 if (i == RS2_OPTION_DEPTH_UNITS)
                 {
                     rs2::option_range op_range = sensor.get_option_range(option);
+                    if (option_name == "stereo_module.depth_units") {
+                      ROS_INFO_STREAM("depth_cale=" << ROS_DEPTH_SCALE
+                                                    << ",min=" << op_range.min
+                                                    << ",max=" << op_range.max);
+                    }
                     if (ROS_DEPTH_SCALE >= op_range.min && ROS_DEPTH_SCALE <= op_range.max)
                     {
                         sensor.set_option(option, ROS_DEPTH_SCALE);
@@ -696,7 +712,7 @@ void BaseRealSenseNode::registerDynamicOption(rs2::options sensor, std::string& 
             {
                 description << std::setw(longest_desc) << std::left << vec_iter.first << " - " << vec_iter.second << std::endl;
             }
-            ROS_DEBUG_STREAM(description.str());
+            ROS_INFO_STREAM(description.str()); // for emitter_enabled
             set_parameter<int>(sensor, option, module_name, description.str());
         }
     }
@@ -708,7 +724,7 @@ void BaseRealSenseNode::registerDynamicReconfigCb()
     for(rs2::sensor sensor : _dev_sensors)
     {
         std::string module_name = create_graph_resource_name(sensor.get_info(RS2_CAMERA_INFO_NAME));
-        ROS_DEBUG_STREAM("module_name:" << module_name);
+        ROS_INFO_STREAM("module_name:" << module_name);
         registerDynamicOption(sensor, module_name);
     }
 
@@ -716,7 +732,7 @@ void BaseRealSenseNode::registerDynamicReconfigCb()
     {
         std::string module_name = nfilter._name;
         auto sensor = *(nfilter._filter);
-        ROS_DEBUG_STREAM("module_name:" << module_name);
+        ROS_INFO_STREAM("filter module_name:" << module_name);
         registerDynamicOption(sensor, module_name);
     }
     ROS_INFO("Done Setting Dynamic reconfig parameters.");
@@ -1965,7 +1981,7 @@ void BaseRealSenseNode::frame_callback(rs2::frame frame)
                         publishFrame(f, t, COLOR,
                                     _depth_aligned_image,
                                     _depth_aligned_info_publisher,
-                                    _depth_aligned_image_publishers, 
+                                    _depth_aligned_image_publishers,
                                     false,
                                     _depth_aligned_seq,
                                     _depth_aligned_camera_info,
@@ -1977,7 +1993,7 @@ void BaseRealSenseNode::frame_callback(rs2::frame frame)
                                 sip,
                                 _image,
                                 _info_publisher,
-                                _image_publishers, 
+                                _image_publishers,
                                 true,
                                 _seq,
                                 _camera_info,
@@ -2078,7 +2094,7 @@ rclcpp::Time BaseRealSenseNode::frameSystemTimeSec(rs2::frame frame)
         rclcpp::Duration elapsed_camera(rclcpp::Duration::from_nanoseconds(elapsed_camera_ns));
 #else
         rclcpp::Duration elapsed_camera(elapsed_camera_ns);
-#endif        
+#endif
         return rclcpp::Time(_ros_time_base + elapsed_camera);
     }
     else
@@ -2703,10 +2719,10 @@ void BaseRealSenseNode::publishFrame(rs2::frame f, const rclcpp::Time& t,
 
 void BaseRealSenseNode::publishMetadata(rs2::frame f, const std::string& frame_id)
 {
-    stream_index_pair stream = {f.get_profile().stream_type(), f.get_profile().stream_index()};    
+    stream_index_pair stream = {f.get_profile().stream_type(), f.get_profile().stream_index()};
     if (_metadata_publishers.find(stream) != _metadata_publishers.end())
     {
-        rclcpp::Time t(frameSystemTimeSec(f));    
+        rclcpp::Time t(frameSystemTimeSec(f));
         auto& md_publisher = _metadata_publishers.at(stream);
         if (0 != md_publisher->get_subscription_count())
         {

@@ -29,6 +29,7 @@ camera:
           emitter_enabled: 1
 
         filters: ''
+        #filters: 'disparity,spatial,temporal,decimation'
         enable_pointcloud: false
         pointcloud_texture_index: 0
         pointcloud_texture_stream: RS2_STREAM_COLOR
