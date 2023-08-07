@@ -32,3 +32,5 @@ camera:
 
         stereo_module:
           emitter_enabled: 1
+        motion_module:
+          enable_motion_correction: false

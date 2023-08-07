@@ -38,3 +38,8 @@ camera:
         pointcloud_texture_index: 0
         pointcloud_texture_stream: RS2_STREAM_COLOR
         rosbag_filename: ''
+
+        stereo_module:
+          emitter_enabled: 1
+        motion_module:
+          enable_motion_correction: false
